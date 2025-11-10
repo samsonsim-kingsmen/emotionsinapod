@@ -13,14 +13,15 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 // ✅ Your real Firebase config (patched storageBucket)
 const firebaseConfig = {
-  apiKey: "AIzaSyBZYOtn_4eMF-Im3c2bWTHqTSRDY3E4evw",
-  authDomain: "giftest-e5219.firebaseapp.com",
-  projectId: "giftest-e5219",
-  storageBucket: "giftest-e5219.firebasestorage.app",
-  messagingSenderId: "30830038179",
-  appId: "1:30830038179:web:77919884542282a3860316",
-  measurementId: "G-83CY6WMZJ5",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
+
 // prevent re-init on HMR
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const storage = getStorage(app);
