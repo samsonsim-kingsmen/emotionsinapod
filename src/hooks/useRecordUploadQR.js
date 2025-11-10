@@ -12,16 +12,16 @@ import { ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage";
  *  - Navigates to /qr with the download URL
  *
  * Params:
- * - hostRef: React ref to the container you want to record (required)
- * - photos: string[] slideshow frames (required)
- * - getCurrentIndex: () => number (required)
- * - getInVideoStickers: () => [{ src, videoPos: {x,y} }] (required)
- * - stickerSize: px for sticker square box (default 120)
- * - storage: Firebase Storage instance (required)
- * - navigate: react-router navigate fn (required)
- * - fps: number (default 30)
- * - durationMs: number (default 2000)
- * - borderRadiusPx: number (default 50)
+ *  - hostRef: React ref to the container you want to record (required)
+ *  - photos: string[] slideshow frames (required)
+ *  - getCurrentIndex: () => number (required)
+ *  - getInVideoStickers: () => [{ src, videoPos: {x,y} }] (required)
+ *  - stickerSize: px for sticker square box (default 120)
+ *  - storage: Firebase Storage instance (required)
+ *  - navigate: react-router navigate fn (required)
+ *  - fps: number (default 30)
+ *  - durationMs: number (default 2000)
+ *  - borderRadiusPx: number (default 50)
  */
 export default function useRecordUploadQR({
   hostRef,
@@ -43,12 +43,15 @@ export default function useRecordUploadQR({
   const loadImage = useCallback(async (src) => {
     const cache = imgCacheRef.current;
     if (cache.has(src)) return cache.get(src);
+
     const img = new Image();
     img.crossOrigin = "anonymous";
+
     const p = new Promise((resolve, reject) => {
       img.onload = () => resolve(img);
       img.onerror = reject;
     });
+
     img.src = src;
     await p;
     cache.set(src, img);
@@ -121,10 +124,7 @@ export default function useRecordUploadQR({
       const stream = canvas.captureStream(fps);
       const mimeType = pickBestMimeType();
       const chunks = [];
-      const recorder = new MediaRecorder(
-        stream,
-        mimeType ? { mimeType } : undefined
-      );
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size) chunks.push(e.data);
       };
