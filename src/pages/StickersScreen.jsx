@@ -1,9 +1,31 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import NavBar from "../components/navbar";
 import useStickerDnD from "../hooks/useStickerDnD";
-import useUserAreaRecorder from "../hooks/useUserAreaRecorder";
+import useRecordUploadQR from "../hooks/useRecordUploadQR"; // ✅ new hook
+
+// --- Inline Firebase init (kept, but storageBucket fixed to .appspot.com)
+import { initializeApp, getApps } from "firebase/app";
+import { getStorage } from "firebase/storage";
+// Optional auth if your Storage rules require auth:
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+
+// ✅ Your real Firebase config (patched storageBucket)
+const firebaseConfig = {
+  apiKey: "AIzaSyBZYOtn_4eMF-Im3c2bWTHqTSRDY3E4evw",
+  authDomain: "giftest-e5219.firebaseapp.com",
+  projectId: "giftest-e5219",
+  storageBucket: "giftest-e5219.firebasestorage.app",
+  messagingSenderId: "30830038179",
+  appId: "1:30830038179:web:77919884542282a3860316",
+  measurementId: "G-83CY6WMZJ5",
+};
+// prevent re-init on HMR
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const storage = getStorage(app);
+// Optional auth if rules require request.auth != null
+const auth = getAuth(app);
 
 import Sticker1 from "/stickers/sticker1.png";
 import Sticker2 from "/stickers/sticker2.png";
@@ -14,9 +36,12 @@ import Sticker6 from "/stickers/sticker6.png";
 import Sticker7 from "/stickers/sticker7.png";
 import Sticker8 from "/stickers/sticker8.png";
 import Sticker9 from "/stickers/sticker9.png";
+import Background from "/UI/Background.jpg";
 
 const DIV_BORDER_RADIUS = "50px";
 const STICKER_SIZE = 120; // px
+const FPS = 30;
+const DURATION_MS = 2000;
 
 const TRAY_LAYOUT = [
   { left: 20, top: 40 },
@@ -43,7 +68,8 @@ const SOURCES = [
 ];
 
 function StickersScreen() {
-  const { state } = useLocation();  
+  const { state } = useLocation();
+  const navigate = useNavigate();
   const photos = (state && state.photos) || [];
 
   const [index, setIndex] = useState(0);
@@ -51,7 +77,15 @@ function StickersScreen() {
 
   const userVideoDivRef = useRef(null);
 
-  //Drag and drop logic
+  // ✅ Optional: silently sign in for dev if your rules need auth
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (!user) signInAnonymously(auth).catch(console.error);
+    });
+    return unsub;
+  }, []);
+
+  // Drag & Drop
   const {
     stickers,
     videoRef,
@@ -66,59 +100,40 @@ function StickersScreen() {
     stickerSize: STICKER_SIZE,
   });
 
- 
   const indexRef = useRef(index);
   const stickersRef = useRef(stickers);
-  useEffect(() => { indexRef.current = index; }, [index]);
-  useEffect(() => { stickersRef.current = stickers; }, [stickers]);
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
+  useEffect(() => {
+    stickersRef.current = stickers;
+  }, [stickers]);
 
   // Slideshow
   useEffect(() => {
     if (!photos.length) return;
-    timerRef.current = setInterval(() => {
+    timerRef.current = window.setInterval(() => {
       setIndex((prev) => (prev + 1) % photos.length);
     }, 300);
-    return () => clearInterval(timerRef.current);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [photos]);
 
-  // Recording Logic
-  const { record, isRecording } = useUserAreaRecorder({
+  // ✅ Use the hook for record → upload → QR navigation
+  const { isRecording, isWorking, recordUploadAndGo } = useRecordUploadQR({
     hostRef: userVideoDivRef,
     photos,
-    sources: SOURCES,
-    getCurrentPhotoIndex: () => indexRef.current,
-    getInVideoStickers: () => (stickersRef.current || []).filter((s) => s.inVideo),
+    getCurrentIndex: () => indexRef.current,
+    getInVideoStickers: () =>
+      (stickersRef.current || []).filter((s) => s.inVideo),
     stickerSize: STICKER_SIZE,
+    storage,
+    navigate,
+    fps: FPS,
+    durationMs: DURATION_MS,
     borderRadiusPx: 50,
-    fps: 30,
-    durationMs: 2000,
   });
-
-  //Downloading Logic
-
-  const downloadBlob = (blob, preferredName) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    const isMp4 = (blob.type || "").includes("mp4");
-    const filename = preferredName || `stickers-${Date.now()}.${isMp4 ? "mp4" : "webm"}`;
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDone = async () => {
-    try {
-      const clip = await record();
-      if (clip) downloadBlob(clip, "user-video-2s");
-      // ❌ No navigation away — stays on this page
-    } catch (e) {
-      console.error(e);
-      alert("Recording failed.");
-    }
-  };
 
   return (
     <main
@@ -128,7 +143,10 @@ function StickersScreen() {
         justifyContent: "center",
         width: "100vw",
         height: "100vh",
-        background: "red",
+        backgroundImage: `url(${Background})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -168,7 +186,7 @@ function StickersScreen() {
             color: "#333",
             borderRadius: DIV_BORDER_RADIUS,
             position: "relative",
-            zIndex: draggingSticker?.inVideo && isDragging ? 10 : 1,     
+            zIndex: draggingSticker?.inVideo && isDragging ? 10 : 1,
           }}
         >
           {!photos.length ? (
@@ -185,6 +203,7 @@ function StickersScreen() {
                   borderRadius: DIV_BORDER_RADIUS,
                   transition: "opacity 0.2s ease-in-out",
                   pointerEvents: "none",
+                  transform: "scaleX(-1)",
                 }}
               />
               {stickers
@@ -214,6 +233,7 @@ function StickersScreen() {
             </>
           )}
         </div>
+     
 
         {/* Right: sticker tray + Done */}
         <div
@@ -239,9 +259,10 @@ function StickersScreen() {
             style={{
               width: "100%",
               height: "80%",
-              backgroundColor: "#F8E9A1",
+              backgroundColor: "#ffffffff",
               borderRadius: DIV_BORDER_RADIUS,
               position: "relative",
+              border: "10px #F0CBDC solid",
             }}
           >
             {stickers
@@ -273,7 +294,7 @@ function StickersScreen() {
           <div
             style={{
               width: "100%",
-              height: "20%",           
+              height: "20%",
               borderRadius: DIV_BORDER_RADIUS,
               display: "flex",
               justifyContent: "center",
@@ -283,21 +304,26 @@ function StickersScreen() {
             }}
           >
             <button
-              onClick={handleDone}
-              disabled={isRecording}
+              onClick={recordUploadAndGo}
+              disabled={isRecording || isWorking}
               style={{
                 flex: 1,
-                height: "100%",
-                borderRadius: DIV_BORDER_RADIUS,
+                height: "80%",
+                borderRadius: "30px",
                 border: "none",
-                cursor: isRecording ? "wait" : "pointer",
                 fontWeight: 700,
-                opacity: isRecording ? 0.6 : 1,
+                background: "#F9C015",
+                boxShadow: "0 12px 0 #F0A901",
+                opacity: isRecording || isWorking ? 0.6 : 1,
+                cursor: isRecording || isWorking ? "not-allowed" : "pointer",
               }}
             >
-              {isRecording ? "Recording…" : "Done!"}
+              {isRecording
+                ? "Rendering..."
+                : isWorking
+                ? "Generating QR..."
+                : "DONE!"}
             </button>
-           
           </div>
         </div>
       </section>

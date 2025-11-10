@@ -1,25 +1,47 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import NavBar from "../components/navbar";
- 
-function QrScreen() {
-  // ✅ Global border radius variable
-  const DIV_BORDER_RADIUS = "50px";
+import QRCode from "qrcode";
+import Background from "/UI/Background.jpg";
+const DIV_BORDER_RADIUS = "50px";
 
-  // ✅ State to control visibility of QR Code
+export default function QrScreen() {
+  const { state } = useLocation();
+  const videoUrl = state?.videoUrl || "";
   const [qrReady, setQrReady] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!videoUrl) return;
+      try {
+        const dataUrl = await QRCode.toDataURL(videoUrl, {
+          margin: 1,
+          width: 640,
+          errorCorrectionLevel: "M",
+        });
+        if (!cancelled) {
+          setQrDataUrl(dataUrl);
+          setQrReady(true);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [videoUrl]);
 
   return (
     <main
       style={{
-        position: "relative",
-        display: "flex",
-        justifyContent: "center",
-        width: "100vw",
-        height: "100vh",
-        background: "red",
+        position: "relative", display: "flex", justifyContent: "center", width: "100vw", height: "100vh", backgroundImage: `url(${Background})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
     >
-      <NavBar/>
+      <NavBar />
       <section
         style={{
           position: "absolute",
@@ -39,40 +61,55 @@ function QrScreen() {
             width: "100%",
             height: "90%",
             display: "flex",
-            justifyContent: qrReady ? "space-between" : "center", // ✅ center when QR not ready
+            justifyContent: qrReady ? "space-between" : "center",
             alignItems: "center",
             gap: "2%",
             padding: "0 3%",
-            boxSizing: "border-box",            
+            boxSizing: "border-box",
           }}
         >
-          {/* Left box - User Video */}
+          {/* Left: User Video */}
           <div
             style={{
-              width: "70%",  
+              width: "70%",
               height: "100%",
               backgroundColor: "#A2D5F2",
               display: "flex",
               justifyContent: "center",
-              alignItems: "center",              
+              alignItems: "center",
               fontSize: "1.5rem",
               fontFamily: "sans-serif",
               color: "#333",
               transition: "all 0.3s ease",
               borderRadius: DIV_BORDER_RADIUS,
+              overflow: "hidden",
             }}
           >
-            User Video
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                controls
+                style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: DIV_BORDER_RADIUS }}
+              />
+            ) : (
+              "Preparing your video..."
+            )}
           </div>
 
-          {/* Right box - QR Code (only visible when qrReady === true) */}
+          {/* Right: QR Code */}
           {qrReady && (
             <div
               style={{
                 width: "30%",
                 height: "100%",
-                backgroundColor: "#E8A87C",
+                backgroundColor: "#ffffffff",
                 display: "flex",
+                flexDirection: "column",
+                gap: "20px",
                 justifyContent: "center",
                 alignItems: "center",
                 borderRadius: DIV_BORDER_RADIUS,
@@ -80,34 +117,23 @@ function QrScreen() {
                 fontFamily: "sans-serif",
                 color: "#333",
                 transition: "opacity 0.3s ease",
+                overflow: "hidden",
+                border: "10px #F9C015 solid"
               }}
             >
-              QR Code
+              {qrDataUrl ? (
+                <div style={{ width: "50%", aspectRatio: "1/1", padding: "20px", border: "5px #363636 solid", borderRadius: "40px" }}>
+                  <img src={qrDataUrl} alt="QR Code" style={{ width: "100%", height: "100%", objectFit: "contain" }} /></div>
+              ) : (
+                "Generating QR..."
+              )}
+              <div style={{ width: "80%", textAlign: "center" }}>
+                Have your accompanied adult scan this QR code to save this memory!
+              </div>
             </div>
           )}
         </div>
       </section>
-
-      {/* ✅ Temporary button for demo — toggle qrReady */}
-      <button
-        onClick={() => setQrReady(!qrReady)}
-        style={{
-          position: "absolute",
-          bottom: "5%",
-          left: "50%",
-          transform: "translateX(-50%)",
-          padding: "10px 20px",
-          border: "none",
-          borderRadius: "8px",
-          backgroundColor: "#fff",
-          cursor: "pointer",
-          fontSize: "1rem",
-        }}
-      >
-        Toggle QR Ready
-      </button>
     </main>
   );
 }
-
-export default QrScreen;
