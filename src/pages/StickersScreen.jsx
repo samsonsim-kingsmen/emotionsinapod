@@ -3,30 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import NavBar from "../components/navbar";
 import useStickerDnD from "../hooks/useStickerDnD";
-import useRecordUploadQR from "../hooks/useRecordUploadQR"; // ✅ new hook
-
-// --- Inline Firebase init (kept, but storageBucket fixed to .appspot.com)
-import { initializeApp, getApps } from "firebase/app";
-import { getStorage } from "firebase/storage";
-// Optional auth if your Storage rules require auth:
-import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
-
-// ✅ Your real Firebase config (patched storageBucket)
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
-};
-
-// prevent re-init on HMR
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const storage = getStorage(app);
-// Optional auth if rules require request.auth != null
-const auth = getAuth(app);
+import useRecordUploadQR from "../hooks/useRecordUploadQR";
 
 import Sticker1 from "/stickers/sticker1.png";
 import Sticker2 from "/stickers/sticker2.png";
@@ -40,7 +17,7 @@ import Sticker9 from "/stickers/sticker9.png";
 import Background from "/UI/Background.jpg";
 
 const DIV_BORDER_RADIUS = "50px";
-const STICKER_SIZE = 120; // px
+const STICKER_SIZE = 120;
 const FPS = 30;
 const DURATION_MS = 2000;
 
@@ -75,16 +52,7 @@ function StickersScreen() {
 
   const [index, setIndex] = useState(0);
   const timerRef = useRef(null);
-
   const userVideoDivRef = useRef(null);
-
-  // ✅ Optional: silently sign in for dev if your rules need auth
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (!user) signInAnonymously(auth).catch(console.error);
-    });
-    return unsub;
-  }, []);
 
   // Drag & Drop
   const {
@@ -129,7 +97,6 @@ function StickersScreen() {
     getInVideoStickers: () =>
       (stickersRef.current || []).filter((s) => s.inVideo),
     stickerSize: STICKER_SIZE,
-    storage,
     navigate,
     fps: FPS,
     durationMs: DURATION_MS,
@@ -234,7 +201,6 @@ function StickersScreen() {
             </>
           )}
         </div>
-     
 
         {/* Right: sticker tray + Done */}
         <div
