@@ -9,8 +9,7 @@ function TncScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Optional: open modal via keyboard when footer link is focused and Enter/Space is pressed
- const openModalKeyHandler = (e) => {
+  const openModalKeyHandler = (e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       setIsModalOpen(true);
@@ -30,14 +29,15 @@ function TncScreen() {
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
-    > <div
+    >
+      <div
         style={{
           position: "absolute",
           bottom: "3%",
           textAlign: "center",
           padding: "0 16px",
-          color:"white",
-            fontWeight: 700,
+          color: "white",
+          fontWeight: 700,
         }}
       >
         By clicking, you agree to our{" "}
@@ -49,17 +49,22 @@ function TncScreen() {
           style={{
             textDecoration: "underline",
             cursor: "pointer",
-          
           }}
         >
           Terms and Conditions
         </span>{" "}
         and are ready to dive into the experience!
       </div>
-  
+
       <NavBar />
 
-      <div style={{ position: "absolute", top: 850 }}>
+      {/* 🔥 UPDATED — "Let's Go" button now uses bottom:% */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "9%", // ← was top: "78%"
+        }}
+      >
         <YellowButton label={"Let's Go"} onClick={() => navigate("/capture")} />
       </div>
 
@@ -100,7 +105,6 @@ function TncScreen() {
                 maxHeight: "60vh",
               }}
             >
-              {/* Custom scrollbar styles */}
               <style>
                 {`
                   ::-webkit-scrollbar {
@@ -131,7 +135,6 @@ function TncScreen() {
                 <h2 style={{ margin: 0 }}>Terms & Conditions</h2>
               </div>
 
-              {/* Scrollable text area */}
               <div
                 style={{
                   lineHeight: 1.6,
@@ -197,18 +200,18 @@ function TncScreen() {
                 </p>
               </div>
 
-              {/* ✅ Confirm button overshooting bottom */}
+              {/* Confirm button overshooting bottom - already using % */}
               <div
                 style={{
                   position: "absolute",
-                  bottom: "-35px",
+                  bottom: "-6%",
                   left: "85%",
                   transform: "translateX(-50%)",
                 }}
               >
                 <YellowButton
                   label={"CONFIRM"}
-               onClick={() => setIsModalOpen(false)} // ✅ navigate to /capture
+                  onClick={() => setIsModalOpen(false)}
                 />
               </div>
             </motion.div>

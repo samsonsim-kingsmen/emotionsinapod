@@ -63,6 +63,7 @@ function StickersScreen() {
     onPointerUp,
     isDragging,
     draggingSticker,
+    dragGhost,
   } = useStickerDnD({
     sources: SOURCES,
     trayLayout: TRAY_LAYOUT,
@@ -89,7 +90,7 @@ function StickersScreen() {
     };
   }, [photos]);
 
-  // ✅ Use the hook for record → upload → QR navigation
+  // Record → upload → QR navigation hook
   const { isRecording, isWorking, recordUploadAndGo } = useRecordUploadQR({
     hostRef: userVideoDivRef,
     photos,
@@ -120,6 +121,27 @@ function StickersScreen() {
       onPointerUp={onPointerUp}
     >
       <NavBar />
+
+      {/* Drag ghost that follows the cursor across the whole screen */}
+      {dragGhost && (
+        <img
+          key={`ghost-${dragGhost.id}`}
+          src={dragGhost.src}
+          alt="Dragging sticker"
+          draggable={false}
+          style={{
+            position: "fixed", // screen-space
+            left: `${dragGhost.x}px`,
+            top: `${dragGhost.y}px`,
+            width: `${STICKER_SIZE}px`,
+            height: `${STICKER_SIZE}px`,
+            objectFit: "contain",
+            pointerEvents: "none", // don't block pointer events
+            zIndex: 9999,
+          }}
+        />
+      )}
+
       <section
         style={{
           position: "absolute",
@@ -138,8 +160,11 @@ function StickersScreen() {
         <div
           ref={(el) => {
             userVideoDivRef.current = el;
-            if (typeof videoRef === "function") videoRef(el);
-            else if (videoRef && "current" in videoRef) videoRef.current = el;
+            if (typeof videoRef === "function") {
+              videoRef(el);
+            } else if (videoRef && "current" in videoRef) {
+              videoRef.current = el;
+            }
           }}
           className="user video"
           style={{
@@ -175,7 +200,11 @@ function StickersScreen() {
                 }}
               />
               {stickers
-                .filter((s) => s.inVideo)
+                .filter(
+                  (s) =>
+                    s.inVideo &&
+                    (!dragGhost || s.id !== dragGhost.id) // hide the one being dragged
+                )
                 .map((s) => (
                   <img
                     key={`video-${s.id}`}
@@ -233,7 +262,7 @@ function StickersScreen() {
             }}
           >
             {stickers
-              .filter((s) => !s.inVideo)
+              .filter((s) => !s.inVideo && s.isTemplate) // only tray originals
               .map((s) => (
                 <img
                   key={`tray-${s.id}`}
@@ -245,7 +274,6 @@ function StickersScreen() {
                     position: "absolute",
                     left: `${s.trayHome.left}px`,
                     top: `${s.trayHome.top}px`,
-                    transform: `translate(${s.trayOffset.x}px, ${s.trayOffset.y}px)`,
                     width: `${STICKER_SIZE}px`,
                     height: `${STICKER_SIZE}px`,
                     objectFit: "contain",

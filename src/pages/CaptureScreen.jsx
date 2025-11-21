@@ -173,7 +173,7 @@ function CaptureScreen() {
       ></div>
 
       <NavBar />
-
+        <div style={{position:"absolute", top:"3%",zIndex:1000, fontSize:"5rem",fontWeight:"700"}}>Tap the button to start</div>
       <section
         className="webcam"
         style={{

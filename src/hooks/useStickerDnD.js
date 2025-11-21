@@ -3,25 +3,9 @@ import { useMemo, useRef, useState } from "react";
 
 /**
  * useStickerDnD
- * Encapsulates sticker drag/drop between a tray and a video canvas.
- *
- * @param {Object} params
- * @param {string[]} params.sources - array of image URLs for stickers
- * @param {{left:number, top:number}[]} params.trayLayout - absolute tray homes for each sticker
- * @param {number} params.stickerSize - size (px) for each sticker
- *
- * @returns {
- *  {
- *    stickers,
- *    videoRef,
- *    onPointerDown,
- *    onPointerMove,
- *    onPointerUp,
- *    isDragging,
- *    draggingSticker,
- *    setStickers, // exposed in case you want to mutate externally
- *  }
- * }
+ * - Tray stickers are templates and never move.
+ * - Dragging from tray spawns a clone and shows a drag ghost.
+ * - Dragging a placed sticker shows the same ghost and moves/removes it.
  */
 export default function useStickerDnD({ sources, trayLayout, stickerSize }) {
   const initialStickers = useMemo(
@@ -29,9 +13,9 @@ export default function useStickerDnD({ sources, trayLayout, stickerSize }) {
       sources.map((src, i) => ({
         id: i,
         src,
-        inVideo: false,
+        isTemplate: true, // original in tray
+        inVideo: false,   // becomes true only when actually placed
         trayHome: trayLayout[i],
-        trayOffset: { x: 0, y: 0 },
         videoPos: { x: 100, y: 100 },
       })),
     [sources, trayLayout]
@@ -39,63 +23,80 @@ export default function useStickerDnD({ sources, trayLayout, stickerSize }) {
 
   const [stickers, setStickers] = useState(initialStickers);
 
-  // Refs for the current drag session
+  // Drag ghost in screen space: { id, src, x, y } or null
+  const [dragGhost, setDragGhost] = useState(null);
+
+  // Internal drag refs
   const draggingRef = useRef(false);
   const activeIdRef = useRef(null);
-  const pointerStartRef = useRef({ x: 0, y: 0 });
-  const startPosRef = useRef({ x: 0, y: 0 });
 
-  // The drop target (video area)
+  // Drop target (video area)
   const videoRef = useRef(null);
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   const onPointerDown = (id) => (e) => {
     e.preventDefault();
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-    draggingRef.current = true;
-    activeIdRef.current = id;
-    pointerStartRef.current = { x: e.clientX, y: e.clientY };
 
-    const s = stickers.find((st) => st.id === id);
-    if (!s) return;
-    startPosRef.current = s.inVideo
-      ? { x: s.videoPos.x, y: s.videoPos.y }
-      : { x: s.trayOffset.x, y: s.trayOffset.y };
+    const baseSticker = stickers.find((st) => st.id === id);
+    if (!baseSticker) return;
+
+    draggingRef.current = true;
+
+    // 🔹 Dragging from tray: create a clone with a new id
+    if (!baseSticker.inVideo && baseSticker.isTemplate) {
+      const maxId = stickers.reduce((m, st) => Math.max(m, st.id), -1);
+      const newId = maxId + 1;
+
+      const newSticker = {
+        ...baseSticker,
+        id: newId,
+        isTemplate: false, // clone, not a tray template
+        inVideo: false,    // not yet placed in video
+      };
+
+      activeIdRef.current = newId;
+
+      setStickers((prev) => [...prev, newSticker]);
+
+      setDragGhost({
+        id: newId,
+        src: baseSticker.src,
+        x: e.clientX - stickerSize / 2,
+        y: e.clientY - stickerSize / 2,
+      });
+      return;
+    }
+
+    // 🔹 Dragging an already placed sticker in the video
+    if (baseSticker.inVideo && !baseSticker.isTemplate) {
+      activeIdRef.current = id;
+
+      setDragGhost({
+        id,
+        src: baseSticker.src,
+        x: e.clientX - stickerSize / 2,
+        y: e.clientY - stickerSize / 2,
+      });
+      return;
+    }
+
+    // Fallback: shouldn't really happen
+    draggingRef.current = false;
+    activeIdRef.current = null;
   };
 
   const onPointerMove = (e) => {
     if (!draggingRef.current) return;
-    const id = activeIdRef.current;
-    if (id == null) return;
 
-    const dx = e.clientX - pointerStartRef.current.x;
-    const dy = e.clientY - pointerStartRef.current.y;
-
-    setStickers((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s;
-        if (s.inVideo) {
-          // Free drag while inside video (no clamping during move)
-          return {
-            ...s,
-            videoPos: {
-              x: startPosRef.current.x + dx,
-              y: startPosRef.current.y + dy,
-            },
-          };
-        } else {
-          // Drag in tray via translate()
-          return {
-            ...s,
-            trayOffset: {
-              x: startPosRef.current.x + dx,
-              y: startPosRef.current.y + dy,
-            },
-          };
-        }
-      })
-    );
+    setDragGhost((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        x: e.clientX - stickerSize / 2,
+        y: e.clientY - stickerSize / 2,
+      };
+    });
   };
 
   const onPointerUp = (e) => {
@@ -115,63 +116,83 @@ export default function useStickerDnD({ sources, trayLayout, stickerSize }) {
       e.clientY >= rect.top &&
       e.clientY <= rect.bottom;
 
-    setStickers((prev) =>
-      prev.map((s) => {
-        if (s.id !== id) return s;
+    setStickers((prev) => {
+      const s = prev.find((st) => st.id === id);
+      if (!s) return prev;
 
-        if (s.inVideo) {
-          // Was in video when released
-          if (!pointerInVideo) {
-            // Leave video → back to tray origin
-            return { ...s, inVideo: false, trayOffset: { x: 0, y: 0 } };
-          } else {
-            // Clamp only on drop (keep inside video bounds)
-            const maxX = rect.width - stickerSize;
-            const maxY = rect.height - stickerSize;
-            return {
-              ...s,
-              videoPos: {
-                x: clamp(s.videoPos.x, 0, maxX),
-                y: clamp(s.videoPos.y, 0, maxY),
-              },
-            };
-          }
-        } else {
-          // Was in tray when released
-          if (pointerInVideo) {
-            // Move into video, centered at pointer
-            const relX = e.clientX - rect.left - stickerSize / 2;
-            const relY = e.clientY - rect.top - stickerSize / 2;
-            const maxX = rect.width - stickerSize;
-            const maxY = rect.height - stickerSize;
-            return {
-              ...s,
-              inVideo: true,
-              videoPos: {
-                x: clamp(relX, 0, maxX),
-                y: clamp(relY, 0, maxY),
-              },
-              trayOffset: { x: 0, y: 0 },
-            };
-          }
-          // Snap back to tray home
-          return { ...s, trayOffset: { x: 0, y: 0 } };
+      // 🔹 Case 1: Clone created from tray (not yet in video)
+      if (!s.inVideo && !s.isTemplate) {
+        if (!pointerInVideo || !rect) {
+          // Dropped outside video → delete clone
+          return prev.filter((st) => st.id !== id);
         }
-      })
-    );
+
+        // Drop inside video → place clone
+        const relX = e.clientX - rect.left - stickerSize / 2;
+        const relY = e.clientY - rect.top - stickerSize / 2;
+        const maxX = rect.width - stickerSize;
+        const maxY = rect.height - stickerSize;
+
+        const clampedX = clamp(relX, 0, maxX);
+        const clampedY = clamp(relY, 0, maxY);
+
+        return prev.map((st) =>
+          st.id === id
+            ? {
+                ...st,
+                inVideo: true,
+                videoPos: { x: clampedX, y: clampedY },
+              }
+            : st
+        );
+      }
+
+      // 🔹 Case 2: Sticker already in the video
+      if (s.inVideo && !s.isTemplate) {
+        if (!pointerInVideo || !rect) {
+          // Dragged out and released → delete placed sticker
+          return prev.filter((st) => st.id !== id);
+        }
+
+        const relX = e.clientX - rect.left - stickerSize / 2;
+        const relY = e.clientY - rect.top - stickerSize / 2;
+        const maxX = rect.width - stickerSize;
+        const maxY = rect.height - stickerSize;
+
+        const clampedX = clamp(relX, 0, maxX);
+        const clampedY = clamp(relY, 0, maxY);
+
+        return prev.map((st) =>
+          st.id === id
+            ? {
+                ...st,
+                inVideo: true,
+                videoPos: { x: clampedX, y: clampedY },
+              }
+            : st
+        );
+      }
+
+      // Templates shouldn't be dragged as active
+      return prev;
+    });
+
+    setDragGhost(null);
   };
 
-  const isDragging = draggingRef.current;
-  const draggingSticker = stickers.find((s) => s.id === activeIdRef.current) || null;
+  const isDragging = !!dragGhost;
+  const draggingSticker =
+    dragGhost && stickers.find((s) => s.id === dragGhost.id);
 
   return {
     stickers,
-    setStickers, // optional external control if needed
+    setStickers,
     videoRef,
     onPointerDown,
     onPointerMove,
     onPointerUp,
     isDragging,
     draggingSticker,
+    dragGhost,
   };
 }

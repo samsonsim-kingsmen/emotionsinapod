@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HiChevronRight } from "react-icons/hi"; // ✅ minimal arrowhead
-import { useNavigate } from "react-router-dom"; // ✅ added navigation hook
+import { HiChevronRight } from "react-icons/hi";
+import { useNavigate } from "react-router-dom";
+
 import Slide1 from "/UI/Slide1.jpg";
 import Slide2 from "/UI/Slide2.jpg";
 import Slide3 from "/UI/Slide3.jpg";
 import Slide4 from "/UI/Slide4.jpg";
+
 import NavBar from "../components/navbar";
 import YellowButton from "../components/YellowButton";
 
@@ -16,22 +18,22 @@ const content = [
   "Happiness is when your heart feels light, safe, and full of joy! The little things that make you smile.",
 ];
 
+// Using BOTTOM instead of TOP
 const positions = [
-  { left: 1050, top: 700 },
-  { left: 100, top: 700 },
-  { left: 100, top: 700 },
-  { left: 100, top: 650 },
+  { left: "78%", bottom: "8%" },
+  { left: "20%", bottom: "8%" },
+  { left: "20%", bottom: "8%" },
+  { left: "20%", bottom: "8%" },
 ];
 
 const backgrounds = [Slide1, Slide2, Slide3, Slide4];
 
 export default function SlidesScreen() {
   const [index, setIndex] = useState(0);
-  const navigate = useNavigate(); // ✅ initialize navigation
+  const navigate = useNavigate();
 
   const handleNext = () => {
     if (index === backgrounds.length - 1) {
-      // ✅ Last slide → navigate to /tnc
       navigate("/tnc");
     } else {
       setIndex((prev) => prev + 1);
@@ -47,7 +49,7 @@ export default function SlidesScreen() {
         overflow: "hidden",
       }}
     >
-      {/* ✅ Background crossfade */}
+      {/* Background Crossfade */}
       <AnimatePresence mode="wait">
         <motion.div
           key={index}
@@ -67,7 +69,7 @@ export default function SlidesScreen() {
 
       <NavBar />
 
-      {/* ✅ Text Div */}
+      {/* Text Bubble */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`text-${index}`}
@@ -77,8 +79,9 @@ export default function SlidesScreen() {
           transition={{ duration: 0.3, ease: "easeInOut" }}
           style={{
             position: "absolute",
-            top: positions[index].top,
             left: positions[index].left,
+            bottom: positions[index].bottom,
+            transform: "translateX(-50%)", // center relative to left %
             backgroundColor: "#E18EB3",
             color: "#fff",
             borderRadius: "12px",
@@ -90,12 +93,11 @@ export default function SlidesScreen() {
             alignItems: "center",
             justifyContent: "center",
             width: "30rem",
-            position: "relative",
           }}
         >
           <span style={{ textAlign: "left" }}>{content[index]}</span>
 
-          {/* ✅ Next Button with arrowhead icon */}
+          {/* Next Button */}
           <div
             style={{
               position: "absolute",

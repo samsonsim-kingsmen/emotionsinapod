@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 
 // You can configure your API base URL via Vite env:
 // VITE_API_BASE_URL=http://localhost:4000
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://emotionsinapodbackend.vercel.app"; // in dev http://localhost:4000
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"; // in dev http://localhost:4000  OR in production https://emotionsinapodbackend.vercel.app
 
 /**
  * Handles:
