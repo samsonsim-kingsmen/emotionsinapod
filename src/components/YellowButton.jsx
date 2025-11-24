@@ -1,6 +1,13 @@
+// src/components/YellowButton.jsx
 import React from "react";
 
-const YellowButton = ({ label, onClick, icon = null, style = {} }) => {
+const YellowButton = ({
+  label,
+  onClick,
+  icon = null,
+  iconPosition = "left", // "left" | "right"
+  style = {},
+}) => {
   const handleMouseDown = (e) => {
     e.currentTarget.style.transform = "translateY(4px)";
     e.currentTarget.style.boxShadow = "0 2px 0 #C9A800";
@@ -13,8 +20,7 @@ const YellowButton = ({ label, onClick, icon = null, style = {} }) => {
 
   const handleFocus = (e) => e.currentTarget.blur();
 
-  // If only icon, make padding tighter and square
-  const hasLabel = Boolean(label);
+  const hasLabel = label !== null && label !== undefined;
   const basePadding = hasLabel ? "0.75em 1em" : "0.6em";
 
   return (
@@ -25,7 +31,7 @@ const YellowButton = ({ label, onClick, icon = null, style = {} }) => {
       onFocus={handleFocus}
       style={{
         backgroundColor: "#F9C015",
-        color: "#ffffffff",        
+        color: "#ffffffff",
         borderRadius: "12px",
         padding: basePadding,
         fontSize: "1.5rem",
@@ -36,16 +42,48 @@ const YellowButton = ({ label, onClick, icon = null, style = {} }) => {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: hasLabel ? "0.5em" : "0",
         width: "fit-content",
         height: "fit-content",
-        userSelect: "none",        
+        userSelect: "none",
+        // allow overrides
+        ...style,
       }}
     >
-      {icon && (
-        <span style={{ display: "flex", alignItems: "center" }}>{icon}</span>
-      )}
-      {hasLabel && <span>{label}</span>}
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: hasLabel && icon ? "0.5em" : 0,
+          lineHeight: 1,
+        }}
+      >
+        {icon && iconPosition === "left" && (
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {icon}
+          </span>
+        )}
+
+        {hasLabel && <span>{label}</span>}
+
+        {icon && iconPosition === "right" && (
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {icon}
+          </span>
+        )}
+      </span>
     </button>
   );
 };

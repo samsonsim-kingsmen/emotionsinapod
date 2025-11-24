@@ -72,9 +72,11 @@ function StickersScreen() {
 
   const indexRef = useRef(index);
   const stickersRef = useRef(stickers);
+
   useEffect(() => {
     indexRef.current = index;
   }, [index]);
+
   useEffect(() => {
     stickersRef.current = stickers;
   }, [stickers]);
@@ -121,6 +123,19 @@ function StickersScreen() {
       onPointerUp={onPointerUp}
     >
       <NavBar />
+
+      {/* Header text – same style as CaptureScreen header */}
+      <div
+        style={{
+          position: "absolute",
+          top: "5%",
+          zIndex: 1000,
+          fontSize: "3rem",
+          fontWeight: "700",
+        }}
+      >
+        Good job! Let's add some stickers!
+      </div>
 
       {/* Drag ghost that follows the cursor across the whole screen */}
       {dragGhost && (
