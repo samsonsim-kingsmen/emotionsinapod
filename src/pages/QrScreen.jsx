@@ -187,63 +187,61 @@ export default function QrScreen() {
           )}
         </div>
       </section>
-{/* Bottom buttons — disappear after READY */}
-{!qrReady && (
-  <div
-    style={{
-      position: "absolute",
-      bottom: "5%",
-      left: 0,
-      width: "100%",
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "0 5%",
-      boxSizing: "border-box",
-    }}
-  >
-    {/* BACK button — left chevron */}
-    <YellowButton
-      label="BACK"
-      icon={
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M14 6L8 12L14 18"
-            stroke="white"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+      {/* Bottom buttons — disappear after READY */}
+      {!qrReady && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "5%",
+            left: 0,
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "0 5%",
+            boxSizing: "border-box",
+          }}
+        >
+          {/* BACK button — left chevron */}
+          <YellowButton
+            label="BACK"
+            icon={
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M14 6L8 12L14 18"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+            iconPosition="left"
+            onClick={() => navigate(-1)}
           />
-        </svg>
-      }
-      iconPosition="left"
-      onClick={() => navigate(-1)}
-    />
 
-    {/* READY button — right chevron on the RIGHT side */}
-    <YellowButton
-      label="READY"
-      icon={
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M10 6L16 12L10 18"
-            stroke="white"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          {/* READY button — right chevron on the RIGHT side */}
+          <YellowButton
+            label="READY"
+            icon={
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M10 6L16 12L10 18"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            }
+            iconPosition="right"
+            onClick={() => {
+              setHeaderText("Your happy moment will be on the Happiness wall!");
+              setQrReady(true);
+            }}
           />
-        </svg>
-      }
-      iconPosition="right"
-      onClick={() => {
-        setHeaderText("Your happy moment will be on the Happiness wall!");
-        setQrReady(true);
-      }}
-    />
-  </div>
-)}
-
-
+        </div>
+      )}
     </main>
   );
 }
