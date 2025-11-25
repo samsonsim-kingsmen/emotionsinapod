@@ -1,21 +1,22 @@
+// src/pages/CaptureScreen.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NavBar from "../components/navbar";
 import Background from "/UI/Background.jpg";
 import Frame from "/UI/frame.png";
+import useClearStickerState from "../hooks/useClearStickerState";
 
 const DIV_BORDER_RADIUS = "50px";
 
-// ✅ plain JS version (no : number)
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 function CaptureScreen() {
-  // ✅ plain refs
+  useClearStickerState(); // 🔹 clear stickers when arriving here
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
-  // ✅ no generic type params in useState
   const [countdown, setCountdown] = useState(null);
   const [statusText, setStatusText] = useState("");
   const [streamReady, setStreamReady] = useState(false);
@@ -30,7 +31,6 @@ function CaptureScreen() {
 
   const [headerText, setHeaderText] = useState("Tap the button to start");
 
-  // show-once flag: once true, never turned off
   const [hasShownPositionOverlay, setHasShownPositionOverlay] =
     useState(false);
 
@@ -82,7 +82,6 @@ function CaptureScreen() {
     return canvas.toDataURL("image/png");
   };
 
-  // ✅ plain JS arg
   const startProgress = (totalMs) => {
     totalDurationMsRef.current = totalMs;
     progressStartRef.current = performance.now();
@@ -126,7 +125,6 @@ function CaptureScreen() {
         `${perShotDescription} (Photo ${i + 1} of ${TOTAL_PHOTOS})`
       );
 
-      // 3..2..1 center countdown
       for (let c = COUNTDOWN_SECS; c >= 1; c--) {
         setCountdown(c);
         await delay(1000);
@@ -151,23 +149,16 @@ function CaptureScreen() {
   const handleRecordButtonClick = async () => {
     if (!streamReady || isRecording || preCountdown !== null) return;
 
-    // Once user clicks, permanently show overlay
     setHasShownPositionOverlay(true);
-
-    // Text during the same 5-second wait
     setHeaderText("Position yourself within the frame");
 
-    // Single 5-second pre-countdown (5..1)
     for (let c = 5; c >= 1; c--) {
       setPreCountdown(c);
       await delay(1000);
     }
     setPreCountdown(null);
 
-    // After pre-countdown, switch header for the capture phase
     setHeaderText("Change your pose, do a silly face!");
-
-    // Start photo capture (3..2..1 per photo)
     handleCaptureSequenceCorrect();
   };
 
@@ -251,7 +242,7 @@ function CaptureScreen() {
           }}
         />
 
-               {/* HUD overlays */}
+        {/* HUD overlays */}
         <div
           style={{
             position: "absolute",
@@ -269,7 +260,6 @@ function CaptureScreen() {
         >
           <div
             style={{
-              // ⬇️ moved down by using 20% instead of 30px
               marginTop: "20%",
               fontSize: "1.25rem",
               fontFamily: "sans-serif",
@@ -283,7 +273,6 @@ function CaptureScreen() {
               style={{
                 fontSize: "3.6rem",
                 fontWeight: 800,
-                // ⬆️ moved up by adding 15%: 10% → 25%
                 marginBottom: "25%",
               }}
             >
@@ -291,12 +280,11 @@ function CaptureScreen() {
             </div>
           )}
         </div>
-
       </section>
 
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
-      {/* User position overlay: appears once, never disappears while on this screen */}
+      {/* User position overlay */}
       <div
         style={{
           position: "relative",
@@ -305,7 +293,7 @@ function CaptureScreen() {
           display: "flex",
           justifyContent: "center",
           top: "15%",
-          zIndex: 4, // slightly above frame bg (5) but below HUD (10)
+          zIndex: 4,
           pointerEvents: "none",
         }}
       >
@@ -316,7 +304,7 @@ function CaptureScreen() {
             height: "800px",
             width: "600px",
             opacity: hasShownPositionOverlay ? 1 : 0,
-            transition: "opacity 0.8s ease", // fade in only
+            transition: "opacity 0.8s ease",
           }}
         />
       </div>
@@ -333,7 +321,6 @@ function CaptureScreen() {
           placeItems: "center",
         }}
       >
-        {/* Outer ring only when not in preCountdown */}
         {preCountdown === null && (
           <svg
             viewBox="0 0 100 100"
@@ -367,7 +354,6 @@ function CaptureScreen() {
           </svg>
         )}
 
-        {/* Big numeric 5..1 during preCountdown */}
         {preCountdown !== null ? (
           <div
             style={{

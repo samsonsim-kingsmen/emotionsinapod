@@ -1,9 +1,11 @@
+// src/pages/QrScreen.jsx (or similar)
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NavBar from "../components/navbar";
 import QRCode from "qrcode";
 import Background from "/UI/Background.jpg";
 import YellowButton from "../components/YellowButton";
+import { STICKERS_STORAGE_KEY } from "../constants/stickersStorage";
 
 const DIV_BORDER_RADIUS = "50px";
 
@@ -41,6 +43,18 @@ export default function QrScreen() {
       cancelled = true;
     };
   }, [videoUrl]);
+
+  const handleReadyClick = () => {
+    // ✅ Clear sticker state when user confirms they are done
+    try {
+      sessionStorage.removeItem(STICKERS_STORAGE_KEY);
+    } catch (err) {
+      console.error("Failed to clear stickers on READY", err);
+    }
+
+    setHeaderText("Your happy moment will be on the Happiness wall!");
+    setQrReady(true);
+  };
 
   return (
     <main
@@ -187,6 +201,7 @@ export default function QrScreen() {
           )}
         </div>
       </section>
+
       {/* Bottom buttons — disappear after READY */}
       {!qrReady && (
         <div
@@ -217,7 +232,7 @@ export default function QrScreen() {
               </svg>
             }
             iconPosition="left"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(-1)} // 🔙 does NOT clear sticker state
           />
 
           {/* READY button — right chevron on the RIGHT side */}
@@ -235,10 +250,7 @@ export default function QrScreen() {
               </svg>
             }
             iconPosition="right"
-            onClick={() => {
-              setHeaderText("Your happy moment will be on the Happiness wall!");
-              setQrReady(true);
-            }}
+            onClick={handleReadyClick}
           />
         </div>
       )}

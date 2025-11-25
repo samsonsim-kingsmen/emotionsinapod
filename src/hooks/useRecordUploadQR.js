@@ -1,23 +1,9 @@
 // /src/hooks/useRecordUploadQR.js
 import { useCallback, useRef, useState } from "react";
 
-// You can configure your API base URL via Vite env:
-// VITE_API_BASE_URL=http://localhost:4000
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000"; // in dev http://localhost:4000  OR in production https://emotionsinapodbackend.vercel.app
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
 
-/**
- * Handles:
- *  - Rendering a hostRef area into a <canvas> as a short video
- *  - Flips the background horizontally (like preview)
- *  - Draws stickers with object-fit: contain
- *  - HiDPI canvas for crisp video
- *  - Posts the RECORDED BLOB to your backend /upload (multipart/form-data)
- *  - Navigates to /qr with the S3 URL returned by the backend
- *
- * Params (unchanged for compatibility):
- *  - hostRef, photos, getCurrentIndex, getInVideoStickers, stickerSize
- *  - storage (ignored), navigate, fps, durationMs, borderRadiusPx
- */
 export default function useRecordUploadQR({
   hostRef,
   photos,
@@ -119,7 +105,10 @@ export default function useRecordUploadQR({
       const stream = canvas.captureStream(fps);
       const mimeType = pickBestMimeType();
       const chunks = [];
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const recorder = new MediaRecorder(
+        stream,
+        mimeType ? { mimeType } : undefined
+      );
       recorder.ondataavailable = (e) => {
         if (e.data && e.data.size) chunks.push(e.data);
       };
@@ -152,15 +141,32 @@ export default function useRecordUploadQR({
           ctx.restore();
         }
 
-        // --- Stickers (object-fit: contain) ---
-        const current = (getInVideoStickers?.() || []);
+        // --- Stickers (object-fit: contain, respecting per-sticker scale) ---
+        const current = getInVideoStickers?.() || [];
         for (const s of current) {
           const im = await loadImage(s.src);
-          const scale = Math.min(stickerSize / im.width, stickerSize / im.height);
-          const dw = im.width * scale;
-          const dh = im.height * scale;
-          const dx = s.videoPos.x + (stickerSize - dw) / 2;
-          const dy = s.videoPos.y + (stickerSize - dh) / 2;
+
+          // ✅ FIX: match the DOM sizing logic exactly
+          // In the UI: boxSize = (s.baseSize ?? STICKER_SIZE) * s.scale
+          const stickerScale =
+            s.scale != null && !Number.isNaN(s.scale) ? s.scale : 1;
+          const baseSize =
+            s.baseSize != null && !Number.isNaN(s.baseSize)
+              ? s.baseSize
+              : stickerSize;
+          const boxSize = baseSize * stickerScale;
+
+          // object-fit: contain inside [boxSize x boxSize]
+          const containScale = Math.min(
+            boxSize / im.width,
+            boxSize / im.height
+          );
+          const dw = im.width * containScale;
+          const dh = im.height * containScale;
+
+          // s.videoPos.x/y is the top-left of that box in CSS coords
+          const dx = s.videoPos.x + (boxSize - dw) / 2;
+          const dy = s.videoPos.y + (boxSize - dh) / 2;
 
           ctx.drawImage(im, dx, dy, dw, dh);
         }
@@ -224,11 +230,9 @@ export default function useRecordUploadQR({
     if (isRecording || isWorking) return;
     setIsWorking(true);
     try {
-      // 1) Render the video on the client
       const blob = await recordOnce();
       if (!blob) return;
 
-      // 2) Turn blob into a File so multer has a filename & mimetype
       const isMp4 = blob.type.includes("mp4");
       const ext = isMp4 ? "mp4" : "webm";
       const filename = `stickers-${Date.now()}.${ext}`;
@@ -236,10 +240,9 @@ export default function useRecordUploadQR({
         type: blob.type || (isMp4 ? "video/mp4" : "video/webm"),
       });
 
-      // 3) POST it to your backend /upload with the expected field name "video"
       const form = new FormData();
       form.append("video", file);
-      // Optional: add a marker header so server can assert it's from this client
+
       const res = await fetch(`${BASE_URL}/upload`, {
         method: "POST",
         body: form,
@@ -250,14 +253,15 @@ export default function useRecordUploadQR({
 
       if (!res.ok) {
         const text = await res.text().catch(() => "");
-        throw new Error(`Upload failed (${res.status}): ${text || res.statusText}`);
+        throw new Error(
+          `Upload failed (${res.status}): ${text || res.statusText}`
+        );
       }
 
       const json = await res.json(); // { message, key, url, contentType, size }
       const { url } = json || {};
       if (!url) throw new Error("Server did not return a URL.");
 
-      // 4) Navigate to QR screen with the S3 URL
       navigate("/qr", { state: { videoUrl: url } });
 
       return url;

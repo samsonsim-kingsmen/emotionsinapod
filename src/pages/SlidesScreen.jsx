@@ -1,3 +1,4 @@
+// src/pages/SlidesScreen.jsx
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiChevronRight } from "react-icons/hi";
@@ -10,6 +11,7 @@ import Slide4 from "/UI/Slide4.jpg";
 
 import NavBar from "../components/navbar";
 import YellowButton from "../components/YellowButton";
+import useClearStickerState from "../hooks/useClearStickerState";
 
 const content = [
   "Remember a time that made you smile or laugh at something funny!",
@@ -18,7 +20,6 @@ const content = [
   "Happiness is when your heart feels light, safe, and full of joy! The little things that make you smile.",
 ];
 
-// Using BOTTOM instead of TOP
 const positions = [
   { left: "78%", bottom: "8%" },
   { left: "20%", bottom: "8%" },
@@ -29,6 +30,8 @@ const positions = [
 const backgrounds = [Slide1, Slide2, Slide3, Slide4];
 
 export default function SlidesScreen() {
+  useClearStickerState(); // 🔹 clear stickers on slides too
+
   const [index, setIndex] = useState(0);
   const navigate = useNavigate();
 
@@ -49,7 +52,6 @@ export default function SlidesScreen() {
         overflow: "hidden",
       }}
     >
-      {/* Background Crossfade */}
       <AnimatePresence mode="wait">
         <motion.div
           key={index}
@@ -69,7 +71,6 @@ export default function SlidesScreen() {
 
       <NavBar />
 
-      {/* Text Bubble */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`text-${index}`}
@@ -81,7 +82,7 @@ export default function SlidesScreen() {
             position: "absolute",
             left: positions[index].left,
             bottom: positions[index].bottom,
-            transform: "translateX(-50%)", // center relative to left %
+            transform: "translateX(-50%)",
             backgroundColor: "#E18EB3",
             color: "#fff",
             borderRadius: "12px",
@@ -97,7 +98,6 @@ export default function SlidesScreen() {
         >
           <span style={{ textAlign: "left" }}>{content[index]}</span>
 
-          {/* Next Button */}
           <div
             style={{
               position: "absolute",

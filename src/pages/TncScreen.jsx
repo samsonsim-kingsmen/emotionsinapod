@@ -1,11 +1,15 @@
+// src/pages/TncScreen.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ added
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import NavBar from "../components/navbar";
 import Background from "/UI/TncBackground.jpg";
 import YellowButton from "../components/YellowButton";
+import useClearStickerState from "../hooks/useClearStickerState";
 
 function TncScreen() {
+  useClearStickerState(); // 🔹 clear stickers when TnC is shown
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -58,11 +62,10 @@ function TncScreen() {
 
       <NavBar />
 
-      {/* 🔥 UPDATED — "Let's Go" button now uses bottom:% */}
       <div
         style={{
           position: "absolute",
-          bottom: "9%", // ← was top: "78%"
+          bottom: "9%",
         }}
       >
         <YellowButton label={"Let's Go"} onClick={() => navigate("/capture")} />
@@ -144,11 +147,13 @@ function TncScreen() {
                   flexGrow: 1,
                 }}
               >
+                {/* ... your T&C text unchanged ... */}
                 <p>
                   <strong>Introduction</strong>
                   <br />
                   Welcome to our service. These terms and conditions outline the
-                  rules and regulations for the use of our website and services.
+                  rules and regulations for the use of our website and
+                  services.
                   <br />
                   <br />
                   <strong>Acceptance of Terms</strong>
@@ -200,7 +205,6 @@ function TncScreen() {
                 </p>
               </div>
 
-              {/* Confirm button overshooting bottom - already using % */}
               <div
                 style={{
                   position: "absolute",

@@ -1,9 +1,13 @@
+// src/pages/LandingScreen.jsx
 import React from "react";
 import LandingBackground from "/UI/LandingBackground.jpg";
 import CircleButton from "../components/CircleButton";
 import { useNavigate } from "react-router-dom";
+import useClearStickerState from "../hooks/useClearStickerState";
 
 function LandingScreen() {
+  useClearStickerState(); // 🔹 clear stickers whenever we reach landing
+
   const buttons = ["Қазақ", "Русский", "English"];
   const navigate = useNavigate();
 
@@ -33,18 +37,24 @@ function LandingScreen() {
         }}
       >
         <p style={{ textAlign: "center", color: "white" }}>
-          ЖҮРЕКТЕН ШЫҚҚАН ҚУАНЫШ<br />
-          ТАНЕЦ РАДОСТИ<br />
-          Heartful HAPPINESS<br />
+          ЖҮРЕКТЕН ШЫҚҚАН ҚУАНЫШ
+          <br />
+          ТАНЕЦ РАДОСТИ
+          <br />
+          Heartful HAPPINESS
+          <br />
         </p>
       </div>
 
       {/* Subtitle */}
       <div style={{ position: "absolute", left: "5%", top: "35%" }}>
         <p style={{ textAlign: "left", color: "white" }}>
-          Бақытты зерттеу үшін саяхатыңызды бастаңыз!<br />
-          Начните свое приключение, чтобы исследовать счастье!<br />
-          Begin your adventure to explore Happiness!<br />
+          Бақытты зерттеу үшін саяхатыңызды бастаңыз!
+          <br />
+          Начните свое приключение, чтобы исследовать счастье!
+          <br />
+          Begin your adventure to explore Happiness!
+          <br />
         </p>
       </div>
 
